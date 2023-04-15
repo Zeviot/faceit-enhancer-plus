@@ -1,7 +1,5 @@
-/** @jsx h */
 import select from 'select-dom'
-import { h } from 'dom-chef'
-import elementReady from 'element-ready'
+import React from 'dom-chef'
 import { CACHE_TIME, getSelf } from '../helpers/faceit-api'
 import {
   hasFeatureAttribute,
@@ -9,26 +7,38 @@ import {
 } from '../helpers/dom-element'
 import { LEVELS } from '../helpers/elo'
 import createSkillLevelElement from '../components/skill-level'
-import { isLoggedIn } from '../helpers/user'
 
 const FEATURE_ATTRIBUTE = 'level-progress'
 const REFRESH_TIME = CACHE_TIME + 15000
 
 export default async () => {
-  if (!isLoggedIn()) {
+  const parasiteParentElement = select('parasite-main-header')
+
+  if (!parasiteParentElement) {
     return
   }
 
-  const headerRightElement = select('.main-header__right')
+  const parasiteRootElement = select(
+    '#__next',
+    parasiteParentElement.shadowRoot
+  )
 
-  if (!headerRightElement) {
+  if (!parasiteRootElement) {
     return
   }
 
-  if (hasFeatureAttribute(FEATURE_ATTRIBUTE, headerRightElement)) {
+  const targetElement =
+    parasiteRootElement.firstElementChild?.lastElementChild?.lastElementChild
+      ?.firstElementChild?.firstElementChild?.lastElementChild
+
+  if (!targetElement) {
     return
   }
-  setFeatureAttribute(FEATURE_ATTRIBUTE, headerRightElement)
+
+  if (hasFeatureAttribute(FEATURE_ATTRIBUTE, targetElement)) {
+    return
+  }
+  setFeatureAttribute(FEATURE_ATTRIBUTE, targetElement)
 
   let levelElement
 
@@ -59,67 +69,53 @@ export default async () => {
       <div
         style={{
           display: 'flex',
-          'align-items': 'center',
-          'margin-right': 8,
-          'margin-left': 24
+          fontSize: 12,
+          color: 'rgba(255,255,255,0.6)',
+          alignItems: 'center',
+          marginRight: 8,
+          marginLeft: 4
         }}
       >
-        <div style={{ 'margin-right': 4 }}>
+        {createSkillLevelElement({
+          level: skillLevel
+        })}
+        <div style={{ 'margin-left': 4 }}>
           <div
-            className="text-light"
             style={{
               display: 'flex',
-              'justify-content': 'space-between'
+              'justify-content': 'space-between',
+              alignItems: 'flex-end'
             }}
           >
-            <a
-              className="text-sm text-muted bold"
-              style={{ 'align-self': 'flex-end' }}
-              onClick={async e => {
-                e.preventDefault()
-                const selectGameElementSelector =
-                  'div[ng-click="vm.openGameSelectorModal()"'
-
-                let selectGameElement = select(selectGameElementSelector)
-
-                if (!selectGameElement) {
-                  const logoElement = select('a[href="/en/home"]')
-
-                  if (!logoElement) {
-                    return
-                  }
-
-                  logoElement.click()
-
-                  selectGameElement = await elementReady(
-                    selectGameElementSelector
-                  )
-                }
-
-                selectGameElement.click()
-              }}
-              href="#"
-            >
-              <div>{game.toUpperCase()}</div>
-            </a>
             <div
               style={{
                 display: 'flex',
                 'align-items': 'center',
-                'justify-content': 'flex-end'
+                'justify-content': 'flex-end',
+                gap: 4
               }}
             >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width={16}
+                height={16}
+                fill="none"
+                color="secondary"
+                viewBox="0 0 24 12"
+              >
+                <path
+                  fill="rgba(255,255,255,0.6)"
+                  d="M12 3c0 .463-.105.902-.292 1.293l1.998 2A2.97 2.97 0 0 1 15 6a2.99 2.99 0 0 1 1.454.375l1.921-1.921a3 3 0 1 1 1.5 1.328l-2.093 2.093a3 3 0 1 1-5.49-.168l-1.999-2a2.992 2.992 0 0 1-2.418.074L5.782 7.876a3 3 0 1 1-1.328-1.5l1.921-1.921A3 3 0 1 1 12 3z"
+                />
+              </svg>
               {faceitElo}
-              <i
-                className="icon-ELO-icon text-light"
-                style={{ 'margin-left': 4 }}
-              />
             </div>
+            <div>{game.toUpperCase()}</div>
           </div>
           <div>
             <div
               style={{
-                margin: '1px 0',
+                marginTop: 1,
                 height: 2,
                 width: 110,
                 background: '#4b4e4e'
@@ -134,7 +130,6 @@ export default async () => {
               />
             </div>
             <div
-              className="text-sm text-muted bold"
               style={{
                 display: 'flex',
                 'justify-content': 'space-between'
@@ -148,14 +143,10 @@ export default async () => {
             </div>
           </div>
         </div>
-        {createSkillLevelElement({ level: skillLevel })}
       </div>
     )
 
-    headerRightElement.insertBefore(
-      levelElement,
-      headerRightElement.children[headerRightElement.children.length - 1]
-    )
+    targetElement.insertBefore(levelElement, targetElement.children[2])
   }
 
   addLevelElement()
